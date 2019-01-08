@@ -1,4 +1,3 @@
-# Leetcode
 
 #### DP的六种主流问题：
 1. 坐标&序列DP    
@@ -18,12 +17,6 @@
 3. 状态的初始值是什么
 4. 问题要求的最后答案是什么
 
-
-缺LCS题目 https://www.kancloud.cn/digest/pieces-algorithm/163624
-https://www.google.com/search?ei=9A8uXLCgBMit8QXh8ZToAg&q=LIS%E5%92%8CLCS&oq=LIS%E5%92%8CLCS&gs_l=psy-ab.3...1593.2962..3338...0.0..0.655.1791.0j1j4j5-1......0....1..gws-wiz.......0i71j0i203.1jm5kxfelOs
-以及LDS题目
-
-其中S可以是子串 或者 子序列
 ---
 
 #### Maximum Product Subarray 求最大子数组乘积
@@ -50,12 +43,113 @@ public:
 };
 ```
 
-####  Longest Increasing Subsequence 最长递增子序列 LIS
+### 最长XXX问题
+* 最长公共子序列（longest common sequence）：不要求连续
+* 最长公共子串（longest common substring）：要求连续
+
+#### 1.最长公共子序列（不连续）
+```cpp
+#include <iostream>
+#include <vector>
+
+#define GO_UP 1;
+#define GO_LEFT 2;
+#define GO_DIAGONAL 3;
+
+using namespace std;
+
+
+class Solution {
+
+public:
+    int findLCSequence(const string& str1, const string& str2){
+            if(str1.empty() || str2.empty())
+                return 0;
+            vector<vector<int> > dp(str1.size()+1, 
+                vector<int>(str2.size()+1));
+            vector<vector<int> > dpPath(str1.size()+1, 
+                vector<int>(str2.size()+1));
+            for(int i=0; i<=str1.length(); ++i)
+                dp[i][0] = 0;
+            for(int j=0; j<=str2.length(); ++j)
+                dp[0][j] = 0;
+            
+            
+            for(int i=1; i<=str1.length(); ++i){
+                for(int j=1; j<=str2.length(); ++j){
+                    if(str1[i-1]==str2[j-1]){
+                        dp[i][j]=dp[i-1][j-1]+1;
+                        dpPath[i][j] = GO_DIAGONAL;
+                    }
+                    //子串和子序列的差别在这里
+                    else{
+                        if(dp[i-1][j]>dp[i][j-1]){
+                            dp[i][j]=dp[i-1][j];
+                            dpPath[i][j]=GO_UP;
+                        }
+                        else{
+                            dp[i][j]=dp[i][j-1];
+                            dpPath[i][j]=GO_LEFT;
+                        }
+                    }
+                }
+            }
+            int i = str1.size(), j = str2.size();
+            while(i!=0&&j!=0){
+                if(dpPath[i][j]==1)
+                    cout << str1[i-1] << " ";
+                else if(dpPath[i][j]==GO_UP)
+                    --i;
+                else if(dpPath[i][j]=GO_LEFT)
+                    --j;
+            }
+            return dp[str1.size()][str2.size()];
+        }
+};
+```
+
+#### 2.最长公共子串（连续）
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class Solution {
+
+public:
+    int findLCString(const string& str1, const string& str2){
+            if(str1.empty() || str2.empty())
+                return 0;
+            vector<vector<int> > dp(str1.size()+1, 
+                vector<int>(str2.size()+1));
+            for(int i=0; i<=str1.length(); ++i)
+                dp[i][0] = 0;
+            for(int j=0; j<=str2.length(); ++j)
+                dp[0][j] = 0;
+            
+            int res = 0;
+            for(int i=1; i<=str1.length(); ++i){
+                for(int j=1; j<=str2.length(); ++j){
+                    if(str1[i-1]==str2[j-1]){
+                        dp[i][j]=dp[i-1][j-1]+1;
+                        if(dp[i][j]>res)
+                            res = dp[i][j];
+                    }
+                    //子串和子序列的差别在这里
+                    else
+                        dp[i][j] = 0;
+                }
+            }
+        }
+};
+```
+
+####  Longest Increasing Subsequence 最长递增子序列 LIS(不连续)
 
 解题思路*：  
-* 一种动态规划Dynamic Programming的解法，这种解法的时间复杂度为O(n2)，类似brute force的解法。
-* 我们维护一个一维dp数组，其中dp[i]表示以nums[i]为结尾的最长递增子串的长度。
-* 对于每一个nums[i]，我们从第一个数再搜索到i，如果发现某个数小于nums[i]，我们更新dp[i]，更新方法为dp[i] = max(dp[i], dp[j] + 1)，即比较当前dp[i]的值和那个小于num[i]的数的dp值加1的大小，我们就这样不断的更新dp数组，到最后dp数组中最大的值就是我们要返回的LIS的长度，参见代码如下：
+* 其中dp[i]表示以nums[i]为结尾的最长递增子串的长度。
+* 对于每一个nums[i]，我们从第一个数再搜索到i，如果发现某个数小于nums[i]，我们更新dp[i]，更新方法为dp[i] = max(dp[i], dp[j] + 1)，即比较当前dp[i]的值和那个小于num[i]的数的dp值加1的大小.
+* 我们就这样不断的更新dp数组，到最后dp数组中最大的值就是我们要返回的LIS的长度，参见代码如下：
 
 ```cpp
 class Solution {
@@ -76,34 +170,8 @@ public:
 };
 ```
 
-下面我们来看一种优化时间复杂度到O(nlgn)的解法，这里用到了二分查找法，所以才能加快运行时间哇。思路是，我们先建立一个数组ends，把首元素放进去，然后比较之后的元素，如果遍历到的新元素比ends数组中的首元素小的话，替换首元素为此新元素，如果遍历到的新元素比ends数组中的末尾元素还大的话，将此新元素添加到ends数组末尾(注意不覆盖原末尾元素)。如果遍历到的新元素比ends数组首元素大，比尾元素小时，此时用二分查找法找到第一个不小于此新元素的位置，覆盖掉位置的原来的数字，以此类推直至遍历完整个nums数组，此时ends数组的长度就是我们要求的LIS的长度，特别注意的是ends数组的值可能不是一个真实的LIS，比如若输入数组nums为{4, 2， 4， 5， 3， 7}，那么算完后的ends数组为{2， 3， 5， 7}，可以发现它不是一个原数组的LIS，只是长度相等而已，千万要注意这点。参见代码如下：
 
-```cpp
-class Solution {
-public:
-    int lengthOfLIS(vector<int>& nums) {
-        if (nums.empty()) return 0;
-        vector<int> ends{nums[0]};
-        for (auto a : nums) {
-            if (a < ends[0]) ends[0] = a;
-            else if (a > ends.back()) ends.push_back(a);
-            else {
-                int left = 0, right = ends.size();
-                while (left < right) {
-                    int mid = left + (right - left) / 2;
-                    if (ends[mid] < a) left = mid + 1;
-                    else right = mid;
-                }
-                ends[right] = a;
-            }
-        }
-        return ends.size();
-    }
-};
-```
-
-
-#### 674. Longest Continuous Increasing Subsequence(最长连续递增子序列LCIS)
+####  Longest Continuous Increasing Subsequence(最长连续递增子序列LCIS)
 
 解题思路*：  
 * 由于有了连续这个条件，跟之前那道Number of Longest Increasing Subsequence比起来，其实难度就降低了很多。
@@ -126,19 +194,10 @@ public:
 };
 ```
 
-
-## 坐标和路径DP
-
-#### 55. Jump Game
-Given an array of non-negative integers, you are initially positioned at the first index of the array.
-
-Each element in the array represents your maximum jump length at that position.
-
-Determine if you are able to reach the last index.
+#### 55. 数组跳棋问题
 
 For example:  
 A = [2,3,1,1,4], return true.  
-
 A = [3,2,1,0,4], return false.  
 
 解题思路：  
@@ -163,51 +222,144 @@ public:
 };
 ```
 
-#### 300. Longest Increasing Subsequence（LIS）
-Given an unsorted array of integers, find the length of longest increasing subsequence.
+#### 70. Climbing Stairs
+You are climbing a stair case. It takes n steps to reach to the top.
+Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?
+Note: Given n will be a positive integer.
 
-For example,
-Given [10, 9, 2, 5, 3, 7, 101, 18],
-The longest increasing subsequence is [2, 3, 7, 101], therefore the length is 4. Note that there may be more than one LIS combination, it is only necessary for you to return the length.
-
-Your algorithm should run in O(n2) complexity.
-
-Follow up: Could you improve it to O(n log n) time complexity?
-
-解题思路：
-* 无后效性与状态转移公式：因为DP问题会有无后效性，所以在坐标/序列型DP题里的状态转移公式大都只和前一个
-节点有关。LIS问题中也是：dp[i]只和dp[j]有关联，然后通过遍历nums[0:i-1]与dp[i]的关系，找到最大的dp[j]+1的值（最开始所有dp[i]都等于1）。
-* 找到当前dp[i]的最大值后，将其保存到res中，这样免去了再次遍历整个dp[i]寻找最大值的麻烦（在for循环中同时解dp问题和记录最大dp[i]的值）。
-
+解题思路：  
+* 本题要求找出有多少种爬到梯子最高点的方法，这里是求所有可能性的个数，所以是使用DP而不是DFS。
+* 首先分析边界点，那么就是梯子为0阶时，返回0；梯子为1阶时返回1；梯子为2阶时返回2；因此dp[1]=1, dp[2]=2;
+* 再来是状态转移公式：dp[i] = dp[i - 1] + dp[i - 2];  (3<= i <= n)
 
 ```cpp
 class Solution {
 public:
-    int lengthOfLIS(vector<int>& nums)
-    {
-        vector<int> dp(nums.size(), 1);
-        int res = 0;
-        for (int i = 0; i < nums.size(); ++i)
-        {
-            for (int j = 0; j < i; ++j)
-            {
-                if (nums[i] > nums[j])
-                {
-                    dp[i] = max(dp[i], dp[j] + 1);
-                }
-            }
-            res = max(res, dp[i]);
+    int climbStairs(int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        int dp[n+1];
+        dp[1] = 1;
+        dp[2] = 2;
+
+        for (int i = 3; i <= n; ++i) {
+            dp[i] = dp[i - 1] + dp[i - 2];
         }
-        return res;
+        return dp[n];
     }
 };
 ```
 
+
+
+#### 120. Triangle
+Given a triangle, find the minimum path sum from top to bottom. Each step you may move to adjacent numbers on the row below.
+
+For example, given the following triangle  
+[  
+     [2],  
+    [3,4],  
+   [6,5,7],  
+  [4,1,8,3]  
+]  
+The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 = 11).
+
+解题思路：  
+* 此题使用bottom-up的dp方式
+* 因为bottom-up减少了需要记忆memoization，当前节点经过计算的值就是从三角形最后一行bottom up上来的最小值。因此，只需要复制了三角形最后一行，作为用来更新的一位数组(bottom up的过程中，数组中有些节点会慢慢被弃用，但这是可允许的行为)。
+* 根据这个思想，设定bottom up的状态转移方程，之后逐个遍历这个DP数组，对于每个数字，和它之后的元素比较选择较小的再加上上面一行相邻位置的元素做为新的元素，然后一层一层的向上扫描，整个过程和冒泡排序的原理差不多，最后最小的元素都冒到前面，第一个元素即为所求。代码如下：
+
+```cpp
+class Solution {
+public:
+    int minimumTotal(vector<vector<int> > &triangle) {
+        int n = triangle.size();
+        vector<int> dp(triangle.back()); //辅助数组
+        for (int i = n - 2; i >= 0; --i) { //bottom up的循环
+            for (int j = 0; j <= i; ++j) {
+                dp[j] = min(dp[j], dp[j + 1]) + triangle[i][j]; //本题的状态转移方程
+            }
+        }
+        return dp[0];
+    }
+};
+```
+
+#### 3.最长不公共子序列sequence
+```cpp
+class Solution {
+public:
+    int findLUSlength(string a, string b) {
+        int l1=a.size(),l2=b.size(),i;
+        for(i=0;i<l1&&i<l2;i++){
+            if(a[i]!=b[i]){
+                return max(l1,l2);
+            }
+        }
+        if(i==l1&&i==l2){
+            return -1;
+        }
+        if(i==l1){
+            return l2;
+        }
+        if(i==l2){
+            return l1;
+        }
+    }
+};
+```
+
+
+#### Longest Palindromic Subsequence 最长回文子序列（不连续）
+Example 1:
+Input:
+"bbbab"
+Output:
+4
+```cpp
+  int longestPalindromeSubseq(string s) {
+        int n = s.size();
+        //dp数组大小为(n+1)*n
+        vector<vector<int>> dp(n+1,vector<int>(n));
+        //初始化边界条件dp[1][i] = 1
+        for(int i=0;i<n;i++) 
+            dp[1][i]=1;
+        for(int i=2;i<=n;i++) //length
+            for(int j=0;j<n-i+1;j++) {//start index 
+                dp[i][j] = s[j]==s[i+j-1]?2+dp[i-2][j+1]:max(dp[i-1][j],dp[i-1][j+1]);
+        return dp[n][0]; 
+    }
+```
+
+#### Longest Palindromic Substring最长回文子串
+Example 1:
+
+Input: "babad"
+Output: "bab"
+Note: "aba" is also a valid answer.
+
+```cpp
+string longestPalindrome(string s) {
+    if (s.empty()) return "";
+    if (s.size() == 1) return s;
+    int min_start = 0, max_len = 1;
+    for (int i = 0; i < s.size();) {
+      if (s.size() - i <= max_len / 2) break;
+      int j = i, k = i;
+      while (k < s.size()-1 && s[k+1] == s[k]) ++k; // Skip duplicate characters.
+      i = k+1;
+      while (k < s.size()-1 && j > 0 && s[k + 1] == s[j - 1]) { ++k; --j; } // Expand.
+      int new_len = k - j + 1;
+      if (new_len > max_len) { min_start = j; max_len = new_len; }
+    }
+    return s.substr(min_start, max_len);
+}
+```
+
+
 #### 62. Unique Paths
 A robot is located at the top-left corner of a m x n grid (marked 'Start' in the diagram below).
-
 The robot can only move either down or right at any point in time. The robot is trying to reach the bottom-right corner of the grid (marked 'Finish' in the diagram below).
-
 How many possible unique paths are there?
 
 解题思路：  
@@ -365,72 +517,8 @@ public:
 
 
 
-#### 70. Climbing Stairs
-You are climbing a stair case. It takes n steps to reach to the top.
-
-Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?
-
-Note: Given n will be a positive integer.
-
-解题思路：  
-* 本题要求找出有多少种爬到梯子最高点的方法，这里是求所有可能性的个数，所以是使用DP而不是DFS。
-* 首先分析边界点，那么就是梯子为0阶时，返回0；梯子为1阶时返回1；梯子为2阶时返回2；因此dp[1]=1, dp[2]=2;
-* 再来是状态转移公式：dp[i] = dp[i - 1] + dp[i - 2];  (3<= i <= n)
-
-```cpp
-class Solution {
-public:
-    int climbStairs(int n) {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        int dp[n+1];
-        dp[1] = 1;
-        dp[2] = 2;
-
-        for (int i = 3; i <= n; ++i) {
-            dp[i] = dp[i - 1] + dp[i - 2];
-        }
-        return dp[n];
-    }
-};
-```
-
-#### 120. Triangle
-Given a triangle, find the minimum path sum from top to bottom. Each step you may move to adjacent numbers on the row below.
-
-For example, given the following triangle  
-[  
-     [2],  
-    [3,4],  
-   [6,5,7],  
-  [4,1,8,3]  
-]  
-The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 = 11).
-
-解题思路：  
-* 此题使用bottom-up的dp方式
-* 因为bottom-up减少了需要记忆memoization，当前节点经过计算的值就是从三角形最后一行bottom up上来的最小值。因此，只需要复制了三角形最后一行，作为用来更新的一位数组(bottom up的过程中，数组中有些节点会慢慢被弃用，但这是可允许的行为)。
-* 根据这个思想，设定bottom up的状态转移方程，之后逐个遍历这个DP数组，对于每个数字，和它之后的元素比较选择较小的再加上上面一行相邻位置的元素做为新的元素，然后一层一层的向上扫描，整个过程和冒泡排序的原理差不多，最后最小的元素都冒到前面，第一个元素即为所求。代码如下：
-
-```cpp
-class Solution {
-public:
-    int minimumTotal(vector<vector<int> > &triangle) {
-        int n = triangle.size();
-        vector<int> dp(triangle.back()); //辅助数组
-        for (int i = n - 2; i >= 0; --i) { //bottom up的循环
-            for (int j = 0; j <= i; ++j) {
-                dp[j] = min(dp[j], dp[j + 1]) + triangle[i][j]; //本题的状态转移方程
-            }
-        }
-        return dp[0];
-    }
-};
-```
-
 ---
 ## 字符串的查找和匹配DP
-**只要是遇到字符串的子序列或是匹配问题直接就上动态规划Dynamic Programming，其他的都不要考虑，什么递归呀的都是浮云，千辛万苦的写了递归结果拿到OJ上妥妥Time Limit Exceeded，能把人气昏了，所以还是直接就考虑DP解法省事些。一般来说字符串匹配问题都是更新一个二维dp数组，核心就在于通过更新二维数组的规律找出状态转移公式。**
 
 #### 5. Longest Palindromic Substring（最长回文子串查找）
 Given a string s, find the longest palindromic substring in s. You may assume that the maximum length of s is 1000.  
@@ -975,8 +1063,3 @@ int edit_distance(char *a, char *b)
     return d[lena][lenb];
 }
 ```
-
-
-#### July格子取数问题(较难)
-
-[链接1](http://www.voidcn.com/article/p-qzvoehgl-bdy.html)
