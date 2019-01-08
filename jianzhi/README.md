@@ -1,236 +1,229 @@
-1.DP的经典题目+LCS/LiS
-2.排列组合的题目
-
-#### 575. Distribute Candies
-这道题给我们一堆糖，每种糖的个数不定，分给两个人，让我们求其中一个人能拿到的最大的糖的种类数。
-
-
-1. 我们利用集合set的自动去重复特性来求出糖的种类数。
-2. 然后跟n/2比较，取二者之中的较小值返回即可，参加代码如：
-
+#### strcpy算法
 ```cpp
-class Solution {
-public:
-    int distributeCandies(vector<int>& candies) {
-        unordered_set<int> s;
-        for (int candy : candies) 
-            s.insert(candy);
-        return min(s.size(), candies.size() / 2);
+char* myStrcpy(char* pre, const char* next)
+{
+    if (pre == nullptr || next == nullptr) //空指针直接返回
+    {
+        return nullptr;
     }
-};
+    if (pre == next)                       // 两者相等也无需拷贝了
+        return pre;
+
+    while ((*pre++ = *next++) != '\0');    // 依次赋值给主字符数组
+
+    return pre;
+}
+
+char* myStrcat(char* pre, const char* next)
+{
+    if (pre == nullptr || next == nullptr) // 如果有一个为空指针，直接返回pre
+        return pre;
+    char* tmp_ptr = pre + strlen(pre); //strlen计算字符数，需要包含都文件string.h，当然也可以自己实现
+
+    while ( (*tmp_ptr++ = *next++) != '\0'); // 依次接着赋值
+
+    return pre;
+}
+
 ```
 
-#### 463. Island Perimeter(和dfs无关的，求岛屿周长，且图中只有一个岛屿（因为只有一个岛屿所以和连通子、DFS算法什么的都没关系）)
-
-解题思路：  
-* 这道题给了我们一个格子图，若干连在一起的格子形成了一个小岛，规定了图中只有一个相连的岛，且岛中没有湖，让我们求岛的周长。
-* 我们知道一个格子有四条边，但是当两个格子相邻，周围为6，若某个格子四周都有格子，那么这个格子一条边都不算在周长里。那么我们怎么统计出岛的周长呢？第一种方法，我们对于每个格子的四条边分别来处理，首先看左边的边，只有当左边的边处于第一个位置或者当前格子的左面没有岛格子的时候，左边的边计入周长。其他三条边的分析情况都跟左边的边相似，这里就不多叙述了，参见代码如下：
-
+#### [线程池](https://blog.csdn.net/gcola007/article/details/78750220) [ref](https://blog.csdn.net/CSND_Ayo/article/details/72457190)
+* 线程池管理器（ThreadPoolManager）:用于创建并管理线程池
+* 工作线程（WorkThread）: 线程池中线程
+* 任务接口（Task）:每个任务必须实现的接口，以供工作线程调度任务的执行。
+* 任务队列:用于存放没有处理的任务。提供一种缓冲机制。
 ```cpp
-class Solution {
+#ifndef ThreadPool_h
+#define ThreadPool_h
+
+#include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <functional>
+
+class ThreadPool {
 public:
-    int islandPerimeter(vector<vector<int>>& grid) {
-        if (grid.empty() || grid[0].empty()) return 0;
-        int m = grid.size(), n = grid[0].size(), res = 0;
-        for (int i = 0; i < m; ++i) {
-            for (int j = 0; j < n; ++j) {
-                if (grid[i][j] == 0) continue;
-                if (j == 0 || grid[i][j - 1] == 0) ++res;
-                if (i == 0 || grid[i - 1][j] == 0) ++res;
-                if (j == n - 1 || grid[i][j + 1] == 0) ++res;
-                if (i == m - 1 || grid[i + 1][j] == 0) ++res;
-            }
-        }
-        return res;
-    }
+    ThreadPool(size_t);    //构造函数，size_t n 表示连接数
+
+    template<class F, class... Args>
+    auto enqueue(F&& f, Args&&... args)   //任务管道函数
+    -> std::future<typename std::result_of<F(Args...)>::type>;  //利用尾置限定符  std future用来获取异步任务的结果
+
+    ~ThreadPool();
+private:
+    // need to keep track of threads so we can join them
+    std::vector< std::thread > workers;   //追踪线程
+    // the task queue
+    std::queue< std::function<void()> > tasks;    //任务队列，用于存放没有处理的任务。提供缓冲机制
+
+    // synchronization  同步？
+    std::mutex queue_mutex;   //互斥锁
+    std::condition_variable condition;   //条件变量？
+    bool stop;
 };
-```
 
-#### 130. Surrounded Regions
-解题思路：  
-* 这道题有点像围棋，将包住的O都变成X，但不同的是边缘的O不算被包围，跟之前那道Number of Islands 岛屿的数量很类似，都可以用DFS来解。
-* 在网上看到大家普遍的做法是扫面矩阵的四条边，如果有O，则用DFS遍历，将所有连着的O都变成另一个字符，比如，这样剩下的O都是被包围的，然后将这些O变成X，在把特殊字符变回O就行了。代码如下：
+// the constructor just launches some amount of workers
+inline ThreadPool::ThreadPool(size_t threads): stop(false)
+{
+    for(size_t i = 0;i<threads;++i)
+        workers.emplace_back(     //以下为构造一个任务，即构造一个线程
+            [this]
+            {
+                for(;;)
+                {
+                std::function<void()> task;   //线程中的函数对象
+                    {//大括号作用：临时变量的生存期，即控制lock的时间
+                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+                    this->condition.wait(lock,
+                        [this]{ return this->stop || !this->tasks.empty(); }); //当stop==false&&tasks.empty(),该线程被阻塞 !this->stop&&this->tasks.empty()
+                    if(this->stop && this->tasks.empty())
+                        return;
+                    task = std::move(this->tasks.front());
+                    this->tasks.pop();
 
-```cpp
-class Solution {
-public:
-    void solve(vector<vector<char> >& board) {
-        for (int i = 0; i < board.size(); ++i) {
-            for (int j = 0; j < board[i].size(); ++j) {
-                if ((i == 0 || i == board.size() - 1 || j == 0 || j == board[i].size() - 1) && board[i][j] == 'O')
-                    solveDFS(board, i, j);
-            }
-        }
-        for (int i = 0; i < board.size(); ++i) {
-            for (int j = 0; j < board[i].size(); ++j) {
-                if (board[i][j] == 'O') board[i][j] = 'X';
-                if (board[i][j] == '$') board[i][j] = 'O';
-            }
-        }
-    }
-    void solveDFS(vector<vector<char> > &board, int i, int j) {
-        if (board[i][j] == 'O') {
-            board[i][j] = '$';
-            if (i > 0 && board[i - 1][j] == 'O')
-                solveDFS(board, i - 1, j);
-            if (j < board[i].size() - 1 && board[i][j + 1] == 'O')
-                solveDFS(board, i, j + 1);
-            if (i < board.size() - 1 && board[i + 1][j] == 'O')
-                solveDFS(board, i + 1, j);
-            if (j > 1 && board[i][j - 1] == 'O')
-                solveDFS(board, i, j - 1);
-        }
-    }
-};
-```
+                    }
 
-
-
-#### 200. Number of Islands**
-Given a 2d grid map of '1's (land) and '0's (water), count the number of islands. An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically. You may assume all four edges of the grid are all surrounded by water.
-
-解题思路：  
-* 这道求岛屿数量的题的本质是**求矩阵中连续区域的个数。**  
-* 求矩阵连续区域个数需要想到用深度优先搜索DFS来解：
-  * 先建立一个visited数组用来记录某个位置是否被访问过。
-  * 然后开始DFS二维数组：
-    * 对于一个为‘1’且未被访问过的位置X，我们递归进入其上下左右位置上为‘1’的数。
-    * 然后将X的visited对应值赋为true，继续进入其所有相连的邻位置，这样可以将这个连通区域所有的数找出来
-    * 找完本次区域后，我们将结果res自增1，然后我们在继续找下一个为‘1’且未被访问过的位置，以此类推直至遍历完整个原数组即可得到最终结果，代码如下：
-
-```cpp
-class Solution {
-public:
-    int numIslands(vector<vector<char> > &grid) {
-        if (grid.empty() || grid[0].empty()){
-          return 0;
-        }
-
-        int m, n, res;
-        m = grid.size();
-        n = grid[0].size();
-        res = 0;
-        vector<vector<bool> > visited(m, vector<bool>(n, false));
-
-        for (int i = 0; i < m; ++i) {
-            for (int j = 0; j < n; ++j) {
-                if (grid[i][j] == '1' && !visited[i][j]) {
-                    DFS(grid, visited, i, j);
-                    ++res;
+                task(); //调用函数，运行函数
                 }
             }
-        }
-        return res;
+         );
+}
+
+// add new work item to the pool
+template<class F, class... Args>
+auto ThreadPool::enqueue(F&& f, Args&&... args)  //&& 引用限定符，参数的右值引用，  此处表示参数传入一个函数
+-> std::future<typename std::result_of<F(Args...)>::type>
+{
+    using return_type = typename std::result_of<F(Args...)>::type;
+     //packaged_task是对任务的一个抽象，我们可以给其传递一个函数来完成其构造。之后将任务投递给任何线程去完成，通过
+//packaged_task.get_future()方法获取的future来获取任务完成后的产出值
+    auto task = std::make_shared<std::packaged_task<return_type()> >(  //指向F函数的智能指针
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)  //传递函数进行构造
+        );
+    //future为期望，get_future获取任务完成后的产出值
+    std::future<return_type> res = task->get_future();   //获取future对象，如果task的状态不为ready，会阻塞当前调用者
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex);  //保持互斥性，避免多个线程同时运行一个任务
+
+        // don't allow enqueueing after stopping the pool
+        if(stop)
+            throw std::runtime_error("enqueue on stopped ThreadPool");
+
+        tasks.emplace([task](){ (*task)(); });  //将task投递给线程去完成，vector尾部压入
     }
+    condition.notify_one();  //选择一个wait状态的线程进行唤醒，并使他获得对象上的锁来完成任务(即其他线程无法访问对象)
+    return res;
+}//notify_one不能保证获得锁的线程真正需要锁，并且因此可能产生死锁
 
-    void DFS(vector<vector<char> > &grid,
-      vector<vector<bool> > &visited, int x, int y) {
-
-        //先检测越界，再检测是否已经访问过
-        if (x < 0 || x >= grid.size() || y < 0 ||
-          y >= grid[0].size() || grid[x][y] != '1' || visited[x][y]) {
-              return;
-          }
-
-        //对于未访问过的节点，将其标记为已访问
-        //然后BFS地访问其四方向相邻节点
-        visited[x][y] = true;
-        DFS(grid, visited, x - 1, y);
-        DFS(grid, visited, x + 1, y);
-        DFS(grid, visited, x, y - 1);
-        DFS(grid, visited, x, y + 1);
+// the destructor joins all threads
+inline ThreadPool::~ThreadPool()
+{
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        stop = true;
     }
-};
+    condition.notify_all();  //通知所有wait状态的线程竞争对象的控制权，唤醒所有线程执行
+    for(std::thread &worker: workers)
+        worker.join(); //因为线程都开始竞争了，所以一定会执行完，join可等待线程执行完
+}
+
 ```
-#### 695. Max Area of Island
 
-解题思路：  
-* 需要统计出每个岛的大小，再来更新结果res。
-* 先遍历grid，当遇到为1且未访问过的的点则进入递归函数。
-  * 在递归函数中，我们首先判断i和j是否越界，还有grid[i][j]是否为1，我们没有用visited数组，而是直接修改了grid数组，遍历过的标记为-1。
-  * 如果合法，那么cnt自增1，并且更新结果res，然后对其周围四个相邻位置分别调用递归函数即可，参见代码如下：
+
+#### 实现LRU算法
+
+
+#### 随机打乱一个数组洗牌算法
+这其实是个洗牌算法，首先从所有元素中随机选取一个与第一个元素进行交换，然后在第二个之后选择一个元素与第二个交换，直到最后一个元素。这样能确保每个元素在每个位置的概率都是1/n。
 
 ```cpp
-class Solution {
-public:
-    vector<vector<int>> dirs{{-1,0},{1,0},{0,-1},{0,1}};
-
-    int maxAreaOfIsland(vector<vector<int>>& grid) {
-        int m = grid.size(), n = grid[0].size(), res = 0;
-        for (int i = 0; i < m; ++i) {
-            for (int j = 0; j < n; ++j) {
-                if (grid[i][j] != 1) continue;
-                int cnt = 0;
-                helper(grid, i, j, cnt, res);
-            }
-        }
-        return res;
-    }
-
-    void helper(vector<vector<int>>& grid, int i, int j, int& cnt, int& res) {
-        //越界检查
-        int m = grid.size(), n = grid[0].size();
-        if (i < 0 || i >= m ||
-            j < 0 || j >= n ||
-            grid[i][j] <= 0)
-        {
-            return;
-        }
-        //表示结点为已访问
-        grid[i][j] *= -1;
-
-        //最大连通区域面积累计
-        res = max(res, ++cnt);
-
-        for (auto dir : dirs)
-        {
-            helper(grid, i + dir[0], j + dir[1], cnt, res);
-        }
-    }
-};
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+using namespace std;
+ 
+void random(int a[], int n)
+{
+	int index, tmp, i;
+	srand(time(NULL));
+	for(i=0; i<n; i++)
+	{
+		index=rand()%(n-i)+i;	
+		if(index!=i)
+		{
+			tmp=a[i];
+			a[i]=a[index];
+			a[index]=tmp;
+		}
+ 
+	}
+ 
+} 
+ 
+int main()
+{
+	int a[100];
+	int i;
+	for(i=0; i<100; i++)
+		a[i]=i;
+	random(a, 100);
+	for(i=0; i<100; i++)
+		cout<<a[i]<<"  ";
+	cout<<endl;
+	return 0;
+}
 ```
 
-#### 720. Longest Word in Dictionary
-解题思路*：
-* 这道题给了我们一个字典，是个字符串数组，然后问我们从单个字符开始拼，最长能组成啥单词，注意中间生成的字符串也要在字典中存在，而且当组成的单词长度相等时，返回字母顺序小的那个。
-* 那么为了快速的查找某个单词是否在字典中存在，我们将所有单词放到哈希集合中，在查找的时候，可以采用BFS或者DFS都行。
-* 先来看BFS的做法，使用一个queue来辅助，我们先把所有长度为1的单词找出排入queue中，当作种子选手，然后我们进行循环，每次从队首取一个元素出来，如果其长度大于我们维护的最大值mxLen，则更新mxLen和结果res，如果正好相等，也要更新结果res，取字母顺序小的那个。
-* 然后我们试着增加长度，做法就是遍历26个字母，将每个字母都加到单词后面，然后看是否在字典中存在，存在的话，就加入queue中等待下一次遍历，完了以后记得要恢复状态，参见代码如下：
+#### rand5实现rand7
 ```cpp
-class Solution {
-public:
-    string longestWord(vector<string>& words) {
-        string res = "";
-        int mxLen = 0;
-        unordered_set<string> s(words.begin(), words.end());
-        queue<string> q;
-        for (string word : words) {
-            if (word.size() == 1) q.push(word);
-        }
-        while (!q.empty()) {
-            string t = q.front(); q.pop();
-            if (t.size() > mxLen) {
-                mxLen = t.size();
-                res = t;
-            } else if (t.size() == mxLen) {
-                res = min(res, t);
-            }
-            for (char c = 'a'; c <= 'z'; ++c) {
-                t.push_back(c);
-                if (s.count(t)) q.push(t);
-                t.pop_back();
-            }
-        }
-        return res;
+public class Test {    
+    public int rand7() {    
+        int x = 22;    
+        while(x > 21) {    
+            x = rand5() + (rand5() - 1)*5;    
+        }    
+        return 1 + x%7;    
+    }    
+}    
+```
+
+#### 二进制转十进制
+```cpp
+#include <stdio.h>
+#include <math.h>
+ 
+int convertBinaryToDecimal(long long n);
+ 
+int main()
+{
+    long long n;
+    printf("输入一个二进制数: ");
+    scanf("%lld", &n);
+    printf("二进制数 %lld 转换为十进制为 %d", n, convertBinaryToDecimal(n));
+    return 0;
+}
+ 
+int convertBinaryToDecimal(long long n)
+{
+    int decimalNumber = 0, i = 0, remainder;
+    while (n!=0)
+    {
+        remainder = n%10;
+        n /= 10;
+        decimalNumber += remainder*pow(2,i);
+        ++i;
     }
-};
+    return decimalNumber;
+}
 ```
 
 
 
-
-bits相关问题：
-#### 010 二进制中1的个数
+#### 二进制中1的个数
 解题思路：  
 循环左移测试数，flag一直左移（乘以2），当超出表示标识范围的时候，我们就可以终止了，但是这样子的话，最高位的符号位没有测试，因此要单独测试，同时由于会溢出，我们的flag需要用long来标识。
 
@@ -267,7 +260,7 @@ public:
 };
 ```
 
-#### *011 数值的整数次方
+#### 011 数值的整数次方
 
 题目描述:  
 给定一个double类型的浮点数base和int类型的整数exponent。求base的exponent次方。
