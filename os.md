@@ -62,7 +62,97 @@
 
 互斥锁主要分为三种：分为快速互斥锁，递归互斥锁，检索互斥锁：这三种锁的主要区别在于其他为占有互斥锁的线程在希望得到互斥锁的时候是否需要阻塞等待：
 快速互斥锁是指调用线程会阻塞直到拥有互斥锁的线程释放为止；递归互斥锁能够成功返回并且增加调用线程在互斥上加锁的次数；检索互斥锁则为快速互斥锁的阻塞版本，他会立即返回并得到一个错误。Linux系统在缺省参数情况下创建的是快速互斥锁，而一般情况下windows系统是默认采用递归互斥锁的，所以多数有经验的linux开发人员都采用递归互斥锁，以保证和windows的一致性。当然，我们需要根据程序不同的情况定义所需的互斥锁。
+
+
+2. 条件变量的主要操作函数如下：
+ * pthread_cond_init条件变量初始化。
+ * pthread_cond_wait阻塞等待：条件不成立，则线程将一直处于阻塞状态。
+ * pthread_cond_timedwait超时等待，一定时间后程序自动解除阻塞状态。
+ * pthread_cond_signal在使用这个函数的时候需要注意一个问题，就是linux条件变量自动复位的问题。此函数只将一个处于阻塞的线程解除阻塞状态，即使有多个线程等待此条件发生。
+ * pthread_cond_broadcast将所有等待条件发生的线程解除阻塞状态。
+ * pthread_cond_destroy销毁条件变量。
     
+与互斥锁不同，条件变量是用来阻塞一个线程，直到某种特定条件发生为止。条件变量使线程可以睡眠等待某种条件出现。条件变量是利用线程间共享的全局变量通信的一种机制，一个条件变量主要有两种状态：unsignaled（不成立状态）和signaled（成立状态）。而线程间通信主要有两个动作：一个线程等待（条件变量的条件成立），不成立则挂起，另外一个线程使条件成立（给出条件成立的信号）。**通常条件变量需要配合互斥锁同时使用。** 条件的检测是在互斥锁保护下进行的，如果一个条件为假（unsignaled），一个线程自动阻塞，并释放等待状态改变的互斥锁。如果另外一个线程改变条件使条件成立，它就会发信号给关联的条件变量，唤醒一个或多个等待它的线程，重新获得互斥锁，重新评价条件。  
+
+使用条件变量和互斥锁编写生产者消费者互斥代码：
+
+```cpp
+#include <stdio.h>
+#include <pthread.h>
+#define SIZE 4
+
+struct product{
+    pthread_mutex_t mutux;
+    pthread_cond_t notfull;
+    pthread_cond_t notempty;
+    int pos;
+    int buf[SIZE];
+};
+
+struct product pdt;
+
+void init(struct product * t){
+    pthread_mutex_init(&t->mutux,NULL);
+    pthread_cond_init(&t->notfull,NULL);
+    pthread_cond_init(&t->notempty,NULL);
+    t->pos=-1;
+}
+
+void put(struct product * t,int data)
+{
+    pthread_mutex_lock(&t->mutux);
+    if(t->pos+1>SIZE-1)//the  array is full
+       pthread_cond_wait(&t->notfull,&t->mutux);
+    t->pos=t->pos+1;
+    t->buf[t->pos]=data;
+    printf("thread %d put a data %d  to  pos %d\n",pthread_self(),data,t->pos);
+    pthread_cond_signal(&t->notempty);
+    pthread_mutex_unlock(&t->mutux);
+}
+ 
+ 
+void get(struct product * t)
+{
+    pthread_mutex_lock(&t->mutux);
+    if(t->pos<0)//the  array is full
+       pthread_cond_wait(&t->notempty,&t->mutux);
+    printf("thread %d get a data %d  to  pos %d\n",pthread_self(),t->buf[t->pos],t->pos);
+    t->pos=t->pos-1;
+    pthread_cond_signal(&t->notfull);
+    pthread_mutex_unlock(&t->mutux);
+}
+
+void * putter(void *){
+    int n;
+    for(n=0;n<8;n++)
+       put(&pdt,n);
+}
+ 
+void * getter(void *){
+    int n;
+    for(n=0;n<8;n++)
+       get(&pdt);
+}
+ 
+int main(void ){
+   int err;
+   pthread_t pt1,pt2,gt1,gt2;
+   void * retval;
+   init(&pdt);
+   err=pthread_create(&pt1,NULL,putter,0);
+   err=pthread_create(&pt2,NULL,putter,0);
+   err=pthread_create(>1,NULL,getter,0);
+   err=pthread_create(>2,NULL,getter,0);
+   //主线程等待这四个线程结束
+   pthread_join(pt1,&retval);
+   pthread_join(pt2,&retval);
+   pthread_join(gt1,&retval);
+   pthread_join(gt2,&retval);
+   return 0;
+ 
+}
+```
+
 * 信号量机制(Semaphore)
     * 无名线程信号量
     * 命名线程信号量
