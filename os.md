@@ -11,6 +11,90 @@
 对于无线程系统：
 * 进程是资源调度、分配的独立单位
 
+[link](http://www.runoob.com/cplusplus/cpp-multithreading.html)
+1. posix线程编程示例代码
+```cpp
+//文件名：test.cpp
+ 
+#include <iostream>
+#include <cstdlib>
+#include <pthread.h>
+ 
+using namespace std;
+ 
+#define NUM_THREADS     5
+ 
+void *PrintHello(void *threadid)
+{  
+   // 对传入的参数进行强制类型转换，由无类型指针变为整形数指针，然后再读取
+   int tid = *((int*)threadid);
+   cout << "Hello Runoob! 线程 ID, " << tid << endl;
+   pthread_exit(NULL);
+}
+ 
+int main ()
+{
+   pthread_t threads[NUM_THREADS];
+   int indexes[NUM_THREADS];// 用数组来保存i的值
+   int rc;
+   int i;
+   for( i=0; i < NUM_THREADS; i++ ){      
+      cout << "main() : 创建线程, " << i << endl;
+      indexes[i] = i; //先保存i的值
+      // 传入的时候必须强制转换为void* 类型，即无类型指针        
+      rc = pthread_create(&threads[i], NULL, 
+                          PrintHello, (void *)&(indexes[i]));
+      if (rc){
+         cout << "Error:无法创建线程," << rc << endl;
+         exit(-1);
+      }
+   }
+   pthread_exit(NULL);
+}
+```
+
+2. c++11 thread库编程事例代码
+```cpp
+#include <iostream>
+
+#include <thread>
+
+std::thread::id main_thread_id = std::this_thread::get_id();
+
+void hello()  
+{
+    std::cout << "Hello Concurrent World\n";
+    if (main_thread_id == std::this_thread::get_id())
+        std::cout << "This is the main thread.\n";
+    else
+        std::cout << "This is not the main thread.\n";
+}
+
+void pause_thread(int n) {
+    std::this_thread::sleep_for(std::chrono::seconds(n));
+    std::cout << "pause of " << n << " seconds ended\n";
+}
+
+int main() {
+    std::thread t(hello);
+    std::cout << t.hardware_concurrency() << std::endl;//可以并发执行多少个(不准确)
+    std::cout << "native_handle " << t.native_handle() << std::endl;//可以并发执行多少个(不准确)
+    t.join();
+    std::thread a(hello);
+    a.detach();
+    std::thread threads[5];                         // 默认构造线程
+
+    std::cout << "Spawning 5 threads...\n";
+    for (int i = 0; i < 5; ++i)
+        threads[i] = std::thread(pause_thread, i + 1);   // move-assign threads
+    std::cout << "Done spawning threads. Now waiting for them to join:\n";
+    for (auto &thread : threads)
+        thread.join();
+    std::cout << "All threads joined!\n";
+}
+```
+
+
 #### 进程之间的通信方式以及优缺点
 
 * 管道（PIPE）
