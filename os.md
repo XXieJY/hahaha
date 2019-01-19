@@ -54,6 +54,57 @@
     * 使用套接字：
 	套接字在本地可以通过进程PID来唯一标识一个进程，但是在网络中这是行不通的。其实TCP/IP协议族已经帮我们解决了这个问题，网络层的“ip地址”可以唯一标识网络中的主机，而传输层的“协议+端口”可以唯一标识主机中的应用程序（进程）。这样利用三元组（ip地址，协议，端口）就可以标识网络的进程了，网络中的进程通信就可以利用这个标志与其它进程进行交互。
 
+socket服务端监听代码
+```cpp
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<errno.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+
+#define MAXLINE 4096
+
+int main(int argc, char** argv){
+    int listenfd, connfd;
+    struct sockaddr_in servaddr;
+    char buff[4096];
+    int n;
+    
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(listenfd == -1){
+        printf("error");
+        exit(0);
+    }
+    
+    //设置socket地址相关的结构体
+    //其中sin_family代表设置协议族
+    //sin_addr.s_addr代表设置socket要绑定的地址
+    //，其中INADDR_ANY指代本机的所有地址
+    //sin_port指代socket要绑定的监听端口
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family(AF_INET);
+    servaddr.sin_addr.s_addr=htol(INADDR_ANY);
+    servaddr.sin_port=htons(6666);
+    
+    //将监听的文件描述符和socket地址结构体进行一下绑定
+    if(bind(listenfd, (struct sockaddr*)&servaddr
+            , sizeof(ervaddr)) == -1){
+            print("binding errors");
+            exit(0);
+    }
+    
+    while(true){
+        if((connfd = accept(listenfd, (struct sockaddr*)NULL, NULL) == -1))
+            continue;
+        n = recv(connfd, buff, MAXLINE, 0);
+        close(connfd);
+    }
+    close(listenfd);
+}
+```
+
 #### 线程之间的通信方式
 
 * 锁机制：包括互斥锁/量（mutex）、读写锁（reader-writer lock）、自旋锁（spin lock）、条件变量（condition）
