@@ -9,7 +9,7 @@
 * 堆排序、归并排序：任何情况下都是O(nlogn)
 
 
-
+```cpp
 void insertion_sort(int arr[],int len){
  2         for(int i=1;i<len;i++){
  3                 int key=arr[i];
@@ -19,10 +19,9 @@ void insertion_sort(int arr[],int len){
  7                         j--;
  8                 }
  9                 arr[j+1]=key;
-10         }
-11 }
-
-------------------
+ 	}
+ }
+```
 归并排序
 ```cpp
 
