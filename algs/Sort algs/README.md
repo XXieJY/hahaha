@@ -10,17 +10,18 @@
 
 
 ```cpp
-void insertion_sort(int arr[],int len){
- 2         for(int i=1;i<len;i++){
- 3                 int key=arr[i];
- 4                 int j=i-1;
- 5                 while((j>=0) && (key<arr[j])){
- 6                         arr[j+1]=arr[j];
- 7                         j--;
- 8                 }
- 9                 arr[j+1]=key;
- 	}
- }
+void insertion_sort(int arr[])
+{   int len = sizeof(arr)/sizeof(arr[0]);
+    for(int cur=1; cur<len; ++cur){
+        int value = arr[cur];
+        int index = cur-1;
+        while((index>=0)&&(value<arr[index])){
+            arr[index+1]=arr[index];
+            --index;
+        }
+        arr[index+1]=value;
+    }
+}
 ```
 归并排序
 ```cpp
