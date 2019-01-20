@@ -1,32 +1,3 @@
-#### strcpy算法
-```cpp
-char* myStrcpy(char* pre, const char* next)
-{
-    if (pre == nullptr || next == nullptr) //空指针直接返回
-    {
-        return nullptr;
-    }
-    if (pre == next)                       // 两者相等也无需拷贝了
-        return pre;
-
-    while ((*pre++ = *next++) != '\0');    // 依次赋值给主字符数组
-
-    return pre;
-}
-
-char* myStrcat(char* pre, const char* next)
-{
-    if (pre == nullptr || next == nullptr) // 如果有一个为空指针，直接返回pre
-        return pre;
-    char* tmp_ptr = pre + strlen(pre); //strlen计算字符数，需要包含都文件string.h，当然也可以自己实现
-
-    while ( (*tmp_ptr++ = *next++) != '\0'); // 依次接着赋值
-
-    return pre;
-}
-
-```
-
 
 
 #### 随机打乱一个数组洗牌算法
