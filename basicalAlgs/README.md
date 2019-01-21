@@ -272,3 +272,221 @@ int main(int argc, char* argv[])
 ```
 
 ---------------
+
+### 2.树的遍历(前/中/后/层序)、树的恢复(前+中/中+后恢复树)、树的分解(树转数组、树转链表)
+
+* 树的前中后序非递归遍历使用栈辅助实现，树的层序非递归遍历使用队列辅助实现
+
+#### 树的前序遍历
+
+1. 递归法二叉树前序遍历
+
+```cpp
+vector<int> Preorder(TreeNode* root){
+    
+    vector<int> res;
+    Recursion(root, res);
+    
+    return res;
+}
+
+void Recursion(TreeNode* root, vector<int> &res){
+    
+    if(root==NULL)
+        return;
+    
+    //do current node operations here
+    cout << root->value;
+    res.push_back(root->value);
+    
+    Recursion(root->leftChild);
+    Recursion(root->rightChild);
+    
+    //do bottom up operations here
+}
+```
+
+2. 非递归法二叉树前序遍历  
+
+使用栈辅助实现**非递归前序遍历**
+1. 把根节点push到栈中
+2. 循环下列步骤直至栈空
+  * 取出栈顶元素并访问，然后将栈顶元素的左右子节点按照先右后左的顺序推入栈中
+
+代码如下：
+
+```cpp
+vector<int> PreorderIteration(TreeNode* root){
+
+    vector<int> ret;
+    if(root==NULL)
+        return ret;
+
+    stack<TreeNode* > helper{{root}};
+    while(!helper.empty()){
+        TreeNode* cur = helper.top();
+        helper.pop();
+        ret.push_back(cur->value);
+
+        if(cur->rightChild)
+            helper.push(cur->rightChild);
+        if(cur->leftChild)
+            helper.push(cur->leftChild);
+    }
+    return ret;
+}
+
+```
+#### 树的中序遍历
+
+1. 中序遍历的递归解法：
+
+```cpp
+vector Inorder(TreeNode* root){
+    
+    vector<int> ret;
+    Recursion(root, ret);
+    return ret;
+}
+
+void Recursion(TreeNode* root, vector<int> &ret){
+    
+    if(root==NULL)
+        return;
+    
+    if(root->leftChild)
+        Inorder(root->leftChild, ret);
+    
+    //do current node operations here
+    cout << root->value;
+    ret.push_back(root->value);
+    
+    if(root->rightChild)
+        Inorder(root->rightChild, ret);
+    //do bottom up operations here
+}
+```
+
+2. 中序遍历非递归解法：  
+思路是从根节点开始循环执行以下操作直至节点访问完毕且辅助栈空
+* 将当前节点及其所有左子结点压入栈，直至叶子节点的左子节点为空。
+* 然后取出栈顶节点访问并保存节点值。
+* 然后将当前节点切换为当前节点的右子节点，继续上述循环。
+
+```cpp
+vector<int> InorderIteration(TreeNode* root){
+    
+    vector<int> ret;
+    if(root==NULL)
+        return ret;
+    
+    stack<TreeNode*> helper;
+    TreeNode* cur = root;
+    while(cur!=NULL || !helper.empty()){
+        while(cur!=NULL){
+            helper.push(cur);
+            cur = cur->leftChild;
+        }
+        
+        //do current node operation here
+        cur = helper.top();
+        helper.pop();
+        cout << cur->value;
+        ret.push_back(cur->value);
+        
+        cur = cur->rightChild;
+        //do bottom up operations here
+    }
+    return ret;
+}
+```
+
+
+#### 树的后序遍历
+
+1.后序遍历的递归解法：
+
+```cpp
+vector<int> PostOrder(TreeNode* root){
+    
+    vector<int> ret;
+    Recursion(root, ret);
+    return ret;
+}
+
+void Recursion(TreeNode* root, vector<int> ret){
+    
+    if(root==NULL)
+        return;
+    
+    if(root->leftChild)
+        Recursion(root->leftChild, ret);
+    if(root->rightChild)
+        Recursion(root->rightChild, ret);
+    
+    //do current operations here
+    ret.push_back(root->value);
+}
+```
+
+2 后序遍历非递归解法：  
+
+由于后序遍历的顺序是左-右-根，而先序遍历的顺序是根-左-右，二者其实还是很相近的，我们可以先在先序遍历的方法上做些小改动，使其遍历顺序变为根-右-左，然后翻转一下，就是左-右-根啦，翻转的方法我们使用反向Q，哦不，是反向加入结果res，每次都在结果res的开头加入结点值，而改变先序遍历的顺序就只要该遍历一下入栈顺序，先左后右，这样出栈处理的时候就是先右后左啦，参见代码如下：
+
+
+```cpp
+vector<int> PostOrder(TreeNode* root){
+    
+    if(root==NULL)
+        return {};
+        
+    vector<int> ret;
+    stack<TreeNode* > helper{{root}};
+    while(!helper.empty()){
+        TreeNode* cur = helper.top();
+        helper.pop();
+	//将非递归先序遍历的结果反向插入ret中
+        ret.insert(ret.begin(), cur->value);
+        
+        if(cur->leftChild)
+            helper.push(cur->leftChild);
+        if(cur->rightChild)
+            helper.push(cur->rightChild);
+    }
+    return ret;
+}
+```
+
+#### 二叉树层序遍历（队列辅助层序遍历）*
+解题思路：  
+* 层序遍历二叉树是典型的广度优先搜索BFS的应用，但是这里稍微复杂一点的是，我们要把各个层的数分开，存到一个二维向量里面。
+* 大体思路还是基本相同的，建立一个queue，然后先把根节点放进去，这时候找根节点的左右两个子节点，这时候去掉根节点，此时queue里的元素就是下一层的所有节点。
+* 用一个for循环遍历它们，然后存到一个一维向量里，遍历完之后再把这个一维向量存到二维向量里，以此类推，可以完成层序遍历。代码如下：
+
+```cpp
+vector<vector<int> > levelOder(TreeNode* root){
+    
+    if(root==NULL)
+        return {{}};
+    
+    vector<vector<int> > ret;
+    queue<TreeNode* > helper;
+    helper.push(root);
+    while(!helper.empty()){
+        vecot<int> curLevel;
+        int levelNodeCounts = helper.size();
+        for(int index=0; index<levelNodeCounts; ++index){
+            TreeNode* cur = helper.front();
+            helper.pop();
+            curLevel.puash_back(cur->value);
+            if(cur->leftChild)
+                helper.push(cur->leftChild);
+            if(cur->rightChild)
+                helper.push(cur->rightChild);
+        }
+        ret.push_back(curLevel);
+    }
+    return ret;
+}
+```
+
