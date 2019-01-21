@@ -490,3 +490,176 @@ vector<vector<int> > levelOder(TreeNode* root){
 }
 ```
 
+
+
+### 求二叉树维度属性问题（二叉树高度，二叉树宽度，二叉树子节点最近公共祖先节点，二叉树到叶子节点的路径）：
+
+#### dfs求二叉树高度：   
+
+求二叉树高度采用分治算法bottom-up的方法
+* 叶子节点的左右空节点开始，将底层的数的高度bottom-up的带上来
+* 然后再merger一下，比如在第i层的cur节点，将其得到的leftHeight和rightHeight取最大值
+* 然后+1返回上一层
+
+```cpp
+int GetBinaryMaximumHeight(TreeNode* root){
+    if(root==NULL)
+        return 0;
+    else
+        return 1 + Math.max(GetBinaryMaximumHeight(root->leftChild),
+            GetBinaryMaximumHeight(root->rightChild));
+}
+```
+
+#### 求二叉树宽度
+分治法bottom up地传递当前层的宽度
+* 当前节点左右子节点有一个为空，则向上返回1
+* 否则向上返回左右宽度和
+
+```cpp
+public  static int countOfLeaf(TreeNode root)
+{
+    if(root==null)
+        return 0;
+	
+    if(root.left==null  || root.right==null)
+        return 1;
+    else
+        return countOfLeaf(root.left)+countOfLeaf(root.right);
+}
+```
+
+### 二叉树的LCA（最近公共祖先）问题：
+
+#### 235 Lowest Common Ancestor of a Binary Search Tree
+
+解题思路：  
+* 二叉搜索树节点值的关系：左<根<右。因此有规律：
+    * 如果根节点的值大于p和q之间的较大值，说明p和q都在左子树中，那么此时我们就进入根节点的左子节点继续递归
+    * 如果根节点小于p和q之间的较小值，说明p和q都在右子树中，那么此时我们就进入根节点的右子节点继续递归
+    * 如果根节点介于左右子节点之间，则说明找到最近公共祖先
+
+```cpp
+TreeNode* Bfs(TreeNode* root, TreeNode* p, TreeNode* q){
+    
+    if(root==NULL)
+        return NULL;
+    
+    if((root->value)>max(p->val,q->val))
+        return Bfs(root->leftChild, p, q);
+    else if((root->value)<min(p->val,q->val))
+        return Bfs(root->rightChild, p, q);
+    else 
+        return root;
+}
+```
+
+#### 求二叉树从根节点到给定节点的路径
+
+```cpp
+bool DoesExistRoot2LeafPath(TreeNode* root, TreeNode* leaf, vector<int> &ret){
+        
+    if(root==NULL)
+        return false;
+    else{
+        ret.push_back(root->value);
+        if(root==leaf){
+            for(int x:ret) cout<<x<<',';
+            return true;
+        }
+        
+        bool foo = false;
+        if(!foo&&root->leftChild!=NULL)
+            foo = DoesExistRoot2LeafPath(root->leftChild, leaf, ret);
+        if(!foo&&root->rightChild!=NULL)
+            foo = DoesExistRoot2LeafPath(root->rightChild, leaf, ret);
+        
+        //回溯当前节点
+        if(!foo)
+            ret.pop_back();
+        
+        return foo;
+    }
+}
+```
+
+#### 二叉树重建相关问题*：  
+
+1. 用前序遍历和中序遍历还原二叉树
+
+解题思路：  
+
+* 由于先序的顺序的第一个肯定是根，所以原二叉树的根节点可以知道，题目中给了一个很关键的条件就是树中没有相同元素，有了这个条件我们就可以在中序遍历中也定位出根节点的位置，并以根节点的位置将中序遍历拆分为左右两个部分，分别对其递归调用原函数。代码如下：
+
+```cpp
+class Solution {
+public:
+    TreeNode *buildTree(vector<int> &preorder, vector<int> &inorder)
+    {
+        return buildTree(preorder, 0, preorder.size() - 1,
+            inorder, 0, inorder.size() - 1);
+    }
+
+    TreeNode *buildTree(vector<int> &preorder, int pLeft, int pRight,
+        vector<int> &inorder, int iLeft, int iRight)
+    {
+        if (pLeft > pRight || iLeft > iRight)
+        {
+            return NULL;
+        }
+        int i = 0;
+        for (i = iLeft; i <= iRight; ++i)
+        {
+            if (preorder[pLeft] == inorder[i]) break;
+        }
+        TreeNode *cur = new TreeNode(preorder[pLeft]);
+        //preoder的剩余元素被递归地划分为[pLeft+1,pLeft+(i-ileft)]
+        //&[pleft+(i-iLeft)+1, pRight]。其中i-iLeft的值
+        //即为当前根节点的左子树的节点个数
+        //inoder的剩余元素被递归地划分为[iLeft, i-1]&[i+1,iRight]
+        cur->left = buildTree(preorder, pLeft + 1,
+            pLeft + (i - iLeft), inorder, iLeft, i - 1);
+        cur->right = buildTree(preorder, pLeft + (i - iLeft + 1),
+            pRight, inorder, i + 1, iRight);
+        return cur;
+    }
+};
+```
+
+2. 用中序遍历和后序遍历还原二叉树*  
+
+解题思路：  
+
+* 我们知道中序的遍历顺序是左-根-右，后序的顺序是左-右-根，对于这种树的重建一般都是采用递归来做。
+* 由于后序的顺序的最后一个肯定是根，所以原二叉树的根节点可以知道，题目中给了一个很关键的条件就是树中没有相同元素，有了这个条件我们就可以在中序遍历中也定位出根节点的位置，并以根节点的位置将中序遍历拆分为左右两个部分，分别对其递归调用原函数。代码如下：
+
+```cpp
+class Solution {
+public:
+    TreeNode *buildTree(vector<int> &inorder, vector<int> &postorder) {
+        return buildTree(inorder, 0, inorder.size() - 1,
+            postorder, 0, postorder.size() - 1);
+    }
+
+    TreeNode *buildTree(vector<int> &inorder, int iLeft, int iRight,
+        vector<int> &postorder, int postLeft, int postRight)
+    {
+        if (iLeft > iRight || postLeft > postRight)
+            return NULL;    
+        int i = 0;
+        for (i = iLeft; i < inorder.size(); ++i)
+        {
+            if (inorder[i] == cur->val) break;
+        }
+        //同理inorder剩余节点被递归划分为[iLeft, i-1]&[i+1, iRight]
+        //postorder剩余节点被递归划分为[postLeft, postLeft+(i-iLeft)-1]
+        //&[postLeft+(i-iLeft),postRight-1]
+        TreeNode *cur = new TreeNode(postorder[postRight]);
+        cur->left = buildTree(inorder, iLeft, i - 1,
+            postorder, postLeft, postLeft + (i-iLeft) - 1);
+        cur->right = buildTree(inorder, i + 1, iRight,
+            postorder, postLeft + (i-iLeft), postRight - 1);
+        return cur;
+    }
+};
+```
