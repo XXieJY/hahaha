@@ -529,9 +529,7 @@ public  static int countOfLeaf(TreeNode root)
 }
 ```
 
-### 二叉树的LCA（最近公共祖先）问题：
-
-#### 235 Lowest Common Ancestor of a Binary Search Tree
+#### 二叉树的LCA（最近公共祖先）问题：
 
 解题思路：  
 * 二叉搜索树节点值的关系：左<根<右。因此有规律：
@@ -583,83 +581,139 @@ bool DoesExistRoot2LeafPath(TreeNode* root, TreeNode* leaf, vector<int> &ret){
 }
 ```
 
-#### 二叉树重建相关问题*：  
+### 二叉树还原(前+中还原二叉树，中+后还原二叉树)，二叉树拆成链表
 
-1. 用前序遍历和中序遍历还原二叉树
+#### 前+中还原二叉树
 
-解题思路：  
-
-* 由于先序的顺序的第一个肯定是根，所以原二叉树的根节点可以知道，题目中给了一个很关键的条件就是树中没有相同元素，有了这个条件我们就可以在中序遍历中也定位出根节点的位置，并以根节点的位置将中序遍历拆分为左右两个部分，分别对其递归调用原函数。代码如下：
+* 先序的顺序的第一个肯定是根，就可以在中序遍历中也定位出根节点的位置。
+* 将中序遍历拆分为左右两个部分，分别对其递归调用原函数。代码如下：
 
 ```cpp
-class Solution {
-public:
-    TreeNode *buildTree(vector<int> &preorder, vector<int> &inorder)
-    {
-        return buildTree(preorder, 0, preorder.size() - 1,
-            inorder, 0, inorder.size() - 1);
-    }
+TreeNode* RecoverTree(vector<int> &preOderSequence, vector<int> &inOderSequence){
+    return Dfs(preOderSequence, 0, preOderSequence.size()-1,
+               inOderSequence, 0, inOderSequence.size()-1);
+}
 
-    TreeNode *buildTree(vector<int> &preorder, int pLeft, int pRight,
-        vector<int> &inorder, int iLeft, int iRight)
-    {
-        if (pLeft > pRight || iLeft > iRight)
-        {
-            return NULL;
-        }
-        int i = 0;
-        for (i = iLeft; i <= iRight; ++i)
-        {
-            if (preorder[pLeft] == inorder[i]) break;
-        }
-        TreeNode *cur = new TreeNode(preorder[pLeft]);
-        //preoder的剩余元素被递归地划分为[pLeft+1,pLeft+(i-ileft)]
-        //&[pleft+(i-iLeft)+1, pRight]。其中i-iLeft的值
-        //即为当前根节点的左子树的节点个数
-        //inoder的剩余元素被递归地划分为[iLeft, i-1]&[i+1,iRight]
-        cur->left = buildTree(preorder, pLeft + 1,
-            pLeft + (i - iLeft), inorder, iLeft, i - 1);
-        cur->right = buildTree(preorder, pLeft + (i - iLeft + 1),
-            pRight, inorder, i + 1, iRight);
-        return cur;
-    }
-};
+TreeNode* Dfs(vector<int> &preOrderSequence, int pLeft, int pRight,
+              vector<int> &inOrderSequence, int iLeft, int iRight){
+
+    if(pLeft>pRight || iLeft>iRight)
+        return NULL;
+
+    int rootIndex = 0;
+    for(rootIndex=iLeft; rootIndex<=iRight;++rootIndex)
+        if(inOrderSequence[rootIndex]==preOrderSequence[pLeft]) break;
+    
+    TreeNode* cur = new TreeNode(preOrderSequence[pLeft]);
+    cur->leftChild = dfs(preOrderSequence, pLeft+1, pLeft+(rootIndex-iLeft),
+                         inOrderSequence, iLeft, i-1);
+    cur->rightChild = dfs(preOrderSequence, pLeft+(rootIndex-iLeft+1),pRight,
+                          inOrderSequence, i+1, iRight);
+    return cur;
+}
+
 ```
 
-2. 用中序遍历和后序遍历还原二叉树*  
-
-解题思路：  
-
-* 我们知道中序的遍历顺序是左-根-右，后序的顺序是左-右-根，对于这种树的重建一般都是采用递归来做。
-* 由于后序的顺序的最后一个肯定是根，所以原二叉树的根节点可以知道，题目中给了一个很关键的条件就是树中没有相同元素，有了这个条件我们就可以在中序遍历中也定位出根节点的位置，并以根节点的位置将中序遍历拆分为左右两个部分，分别对其递归调用原函数。代码如下：
+2. 用中序遍历和后序遍历还原二叉树
 
 ```cpp
-class Solution {
-public:
-    TreeNode *buildTree(vector<int> &inorder, vector<int> &postorder) {
-        return buildTree(inorder, 0, inorder.size() - 1,
-            postorder, 0, postorder.size() - 1);
-    }
+TreeNode* RecoverTree(vector<int> &postOderSequence, vector<int> &inOderSequence){
+    return Dfs(inOderSequence, 0, inOderSequence.size()-1,
+               postOderSequence, 0, postOderSequence.size()-1);
+}
 
-    TreeNode *buildTree(vector<int> &inorder, int iLeft, int iRight,
-        vector<int> &postorder, int postLeft, int postRight)
-    {
-        if (iLeft > iRight || postLeft > postRight)
-            return NULL;    
-        int i = 0;
-        for (i = iLeft; i < inorder.size(); ++i)
-        {
-            if (inorder[i] == cur->val) break;
-        }
-        //同理inorder剩余节点被递归划分为[iLeft, i-1]&[i+1, iRight]
-        //postorder剩余节点被递归划分为[postLeft, postLeft+(i-iLeft)-1]
-        //&[postLeft+(i-iLeft),postRight-1]
-        TreeNode *cur = new TreeNode(postorder[postRight]);
-        cur->left = buildTree(inorder, iLeft, i - 1,
-            postorder, postLeft, postLeft + (i-iLeft) - 1);
-        cur->right = buildTree(inorder, i + 1, iRight,
-            postorder, postLeft + (i-iLeft), postRight - 1);
+TreeNode* Dfs(vector<int> &postOrderSequence, int pLeft, int pRight,
+              vector<int> &inOrderSequence, int iLeft, int iRight){
+
+    if(pLeft>pRight || iLeft>iRight)
+        return NULL;
+
+    int rootIndex = 0;
+    for(rootIndex=iLeft; rootIndex<=iRight;++rootIndex)
+        if(inOrderSequence[rootIndex]==postOrderSequence[pRight]) break;
+    
+    TreeNode* cur = new TreeNode(preOrderSequence[pRight]);
+    cur->leftChild = dfs(postOrderSequence, pLeft, pLeft+(rootIndex-iLeft-1),
+                         inOrderSequence, iLeft, i-1);
+    cur->rightChild = dfs(postOrderSequence, pLeft+(rootIndex-iLeft), pRight-1,
+                          inOrderSequence, i+1, iRight);
+    return cur;
+}
+
+```
+
+
+
+#### 二叉树转链表（先序遍历将二叉树展开）  
+
+
+* 走到最左子节点，然后bottom-up的做如下操作：
+    * 将右子节点备份，当前节点右指针指向左子节点，并将左指针置空。
+    * 然后右指针向下找到叶子节点，将叶子节点指向备份的右子节点。
+
+```cpp
+void BinaryTree2Linkedlist(TreeNode* root){
+    
+    if(root==NULL)
+        return;
+    
+    if(root->leftChild)
+        BinaryTree2Linkedlist(root->leftChild);
+    if(root->rightChild)
+        BinaryTree2Linkedlist(root->rightChild);
+    
+    TreeNode* temp = root->rightChild;
+    root->rightChild = root->leftChild;
+    root->leftChild = NULL;
+    while(root->rightChild)
+        root = root->rightChild;
+    root->rightChild = temp;
+}
+```
+
+
+#### BST转双向链表
+**题目描述**
+
+BST转双向链表时使用中序遍历BST。
+* 记录当前被访问节点为前一个被访问节点。
+* 然后访问当前节点并作出如下动作：
+  * 左指针指向前一个被访问节点  
+  * 如果前一个被访问节点不为NULL, 则该节点的右指针指向当前被访问节点
+  * 更新当前节点为下一个被访问节点的前一个被访问节点。进行中序遍历重复如上操作。
+
+```cpp
+TreeNode* BST2LinkedList(TreeNode* root){
+    
+    if(root==NULL)
+        return NULL;
+    else{
+        TreeNode* lastCheckedNode = NULL;
+        Dfs(root, &lastCheckedNode);
+        
+        TreeNode* cur = lastCheckedNode;
+        while(cur!=NULL&&cur->left!=NULL)
+            cur = cur->leftChild;
         return cur;
     }
-};
+}
+
+void Dfs(TreeNode* root, TreeNode** lastCheckedNode){
+    
+    if(root==NULL)
+        return;
+    else{
+        TreeNode* cur = root;
+        if(cur->leftChild!=NULL)
+            Dfs(root->leftChild, lastCheckedNode);
+        
+        cur->leftChild = *lastCheckedNode;
+        if(*lastCheckedNode!=NULL)
+            (*lastCheckedNode)->rightChild = cur;
+        *lastCheckedNode = cur;
+        
+        if(cur->rightChild!=NULL)
+            Dfs(cur->rightChild, lastCheckedNode);
+    }
+}
 ```
