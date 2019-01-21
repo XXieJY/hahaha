@@ -1,4 +1,4 @@
-###1.排序算法
+### 1.排序算法
 * O(nlogn)：快排不稳定、堆排不稳定、归并稳定；  
 * O(n^2)：冒泡稳定，插入稳定、选择不稳定；  
 * 快排：pivot选择最小元素或者最大元素是表现最差O(n^2)
@@ -6,6 +6,7 @@
 * 堆排序、归并排序：任何情况下都是O(nlogn)
 
 
+#### 插入排序稳定n^2
 ```cpp
 void insertion_sort(int arr[])
 {   int len = sizeof(arr)/sizeof(arr[0]);
@@ -20,7 +21,7 @@ void insertion_sort(int arr[])
     }
 }
 ```
-归并排序
+#### 归并排序不稳定nlogn
 ```cpp
 void merge(int a[], int first, int mid, int last, int temp[]){
     int leftIndex = first, rightIndex = mid+1, k = 0;
@@ -50,7 +51,7 @@ void mergesort(int a[], int first, int last, int temp[]){
 }
 ```
 
-
+#### 快速排序不稳定nlogn
 ```cpp
 //
 //  quickSort.cpp -快速排序代码
@@ -93,8 +94,8 @@ void quickSort(vector<int> &v, int first, int last){
         return;
 }
 ```
----------
 
+#### 冒泡排序稳定n^2
 ```cpp
 //对函数进行重载，传入数组指针和数组大小，同时进行第二次改进
 /*第二次改进：传统冒泡排序中每一趟排序操作只能找到一个最大值或最小值*/
@@ -131,8 +132,8 @@ void Bubble_sort(int a[],int size)
 }
 ```
 
--------------------
-
+#### 堆排序不稳定nlogn
+```cpp
 //
 //  heap.cpp -最大最小堆的生成、堆排序。
 //  二叉堆的定义:
@@ -146,8 +147,6 @@ void Bubble_sort(int a[],int size)
 //    1. 空间复杂度 O(n)
 //    2. 时间复杂度 O(nlogn) 是基于比较的排序算法复杂度下界
 //
-
-```cpp
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
