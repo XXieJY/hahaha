@@ -8,6 +8,9 @@
 
 #### 插入排序稳定n^2
 ```cpp
+//事实上每次取当前插入位置的前一位去判断
+//如果该位置符合条件则替换
+//如果不符合则中断循环，然后在那个位置的后一位插入最终元素
 void insertion_sort(int arr[])
 {   int len = sizeof(arr)/sizeof(arr[0]);
     for(int cur=1; cur<len; ++cur){
